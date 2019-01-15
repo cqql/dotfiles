@@ -54,7 +54,7 @@ task :antigen do
   manage_git_repo "#{Dir.home}/.antigen", "https://github.com/zsh-users/antigen.git"
 end
 
-multitask :packages => [:emacs, :vim_packages]
+multitask :packages => [:emacs]
 
 task :emacs => [:quelpa, :compile_elisp]
 
@@ -87,52 +87,14 @@ task :dualscreen do
   sh "plasmapkg2 -t kwinscript -u dual-screen"
 end
 
-task :system => [:pacaur, :system_packages, :system_conf]
+task :system => [:system_packages, :system_conf]
 
-task :pacaur do
-  if not system("pacman -Q pacaur")
-    sh <<END
-# Create build directory
-dir=$(mktemp -d)
-cd $dir
-
-# Install dependencies
-sudo pacman -S --noconfirm yajl expac
-
-# Install cower
-curl -o PKGBUILD https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=cower
-makepkg PKGBUILD --skippgpcheck
-sudo pacman -U cower*.tar.xz --noconfirm
-
-# Install pacaur
-curl -o PKGBUILD https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=pacaur
-makepkg PKGBUILD
-sudo pacman -U pacaur*.tar.xz --noconfirm
-
-# Clean build directory
-cd ~
-rm -r $dir
-END
-  end
+task :emacs do
+  sh "sudo add-apt-repository ppa:kelleyk/emacs"
 end
 
-task :system_packages => [:pacaur, :system_conf] do
+task :system_packages => [:system_conf] do
   sh <<END
-# Desktop manager
-dm="sddm sddm-theme-kde-plasma-chili"
-
-# Desktop environment
-de="plasma kdebase"
-
-# Desktop Utilities
-de_utils="ulauncher"
-
-# Fonts
-fonts="ttf-fira-sans ttf-fira-mono ttf-fira-code"
-
-# Fix for bluetooth speakers
-audio="pulseaudio-bluetooth"
-
 # Security
 security="firehol"
 
@@ -143,30 +105,22 @@ screenshot="maim slop"
 shell="rxvt-unicode bash-completion zsh"
 
 # Cryptography
-crypto="openssl openssh gnome-keyring"
+crypto="openssl openssh-client openssh-server gnome-keyring"
 
 # Utilities
-utils="htop tree rsync tab"
+utils="htop tree rsync"
 
 # Network utilities
 netutils="nmap tcpdump dnsutils"
 
 # Programming tools
-programming="git vim emacs ripgrep"
+programming="git vim emacs26"
 
 # Web
-web="firefox chromium"
+web="firefox"
 
-pacaur -S --needed --noconfirm $dm $de $de_utils $fonts $audio $security \
-       $screenshot $shell $crypto $utils $netutils $programming $web
+sudo apt-get install --yes $security $screenshot $shell $crypto $utils $netutils $programming $web
 
-# Start desktop manager on boot
-sudo systemctl enable sddm.service
-
-# Connect to the internet
-sudo systemctl enable NetworkManager.service
-
-# Autostart the firewall
 sudo systemctl enable firehol.service
 END
 end
